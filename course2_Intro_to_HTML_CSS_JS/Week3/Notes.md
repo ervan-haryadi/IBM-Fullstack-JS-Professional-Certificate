@@ -1,0 +1,2 @@
+Basic DOM model for window:
+Window -> History (simulate previous or forward in browser), Location (info of URL), Navigator (object representation of client browser), Screen (derive info about user's screen), Document (HTML loaded become Document object)
