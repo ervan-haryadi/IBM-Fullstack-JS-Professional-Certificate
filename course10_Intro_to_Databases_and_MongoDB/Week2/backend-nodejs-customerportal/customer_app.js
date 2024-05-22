@@ -36,11 +36,18 @@ app.post('/api/login', async (req, res) => {
     let password = data['password'];
 
     // Querying the MongoDB 'customers' collection for matching user_name and password
-    const documents = await Customers.find({ user_name: user_name, password: password });
+    const documents = await Customers.find({ user_name: user_name });
 
     // If a matching user is found, set the session username and serve the home page
     if (documents.length > 0) {
-        res.send("User Logged In");
+        // compare input password with the salted version
+        let result = bcrypt.compare(password, documents[0]['password']);
+        if (result) {
+            res.send("User Logged In");
+        } else {
+            res.send("Password incorrect! Try again");
+        }
+        
     } else {
         res.send("User Information incorrect");
     }
@@ -49,7 +56,7 @@ app.post('/api/login', async (req, res) => {
 // POST endpoint for adding a new customer
 app.post('/api/add_customer', async (req, res) => {
     const data = req.body;
-    // console.log(data)
+    console.log(data)
     const documents = await Customers.find({ user_name: data['user_name']});
     if (documents.length > 0) {
         res.send("User already exists");
