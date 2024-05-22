@@ -9,6 +9,9 @@ const bcrypt = require('bcrypt');
 const saltRounds = 5;
 const password = 'admin';
 
+const session = require('express-session');
+const uuid = require('uuid');
+
 // Creating an instance of the Express application
 const app = express();
 
@@ -28,6 +31,15 @@ app.use('/static', express.static(path.join(".", 'frontend')));
 // Middleware to handle URL-encoded form data
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Middleware to handle session
+app.use(session({
+    cookie: {maxAge: 120000},   // session set to expire after 2 minutes of inactivity
+    secret: 'itsasecret',
+    res: false,
+    saveUninitialized: true,
+    genid: () => uuid.v4()
+}));
+
 // POST endpoint for user login
 app.post('/api/login', async (req, res) => {
     const data = req.body;
@@ -43,7 +55,10 @@ app.post('/api/login', async (req, res) => {
         // compare input password with the salted version
         let result = bcrypt.compare(password, documents[0]['password']);
         if (result) {
-            res.send("User Logged In");
+            // create cookie based on username
+            const genidValue = req.sessionID;
+            res.cookie('username', user_name);
+            res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
         } else {
             res.send("Password incorrect! Try again");
         }
@@ -82,6 +97,18 @@ app.post('/api/add_customer', async (req, res) => {
 // GET endpoint for the root URL, serving the home page
 app.get('/', async (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
+});
+
+// GET endpoint for user logout
+app.get('/api/logout', async (req, res) => {
+    req.session.destroy((err) => {
+        if(err) {
+            console.log(err);
+        } else {
+            res.cookie('username', '', {expires: new Date(0)});
+            res.redirect('/');
+        }
+    });
 });
 
 // Starting the server and listening on the specified port
