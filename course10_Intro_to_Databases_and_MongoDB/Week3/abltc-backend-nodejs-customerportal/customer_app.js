@@ -10,7 +10,7 @@ const saltRounds = 5;
 const secretKey = 'aSecretKeys';
 
 // dictionary object to keep username and password
-const userDic = {};
+const usersDic = {};
 
 // Creating an instance of the Express application
 const app = express();
@@ -19,8 +19,8 @@ const app = express();
 const port = 3000;
 
 // MongoDB connection URI and database name
-const uri =  "mongodb://localhost:27017";
-mongoose.connect(uri, {'dbName': 'customerDB'});
+const uri = "mongodb://localhost:27017";
+mongoose.connect(uri, { 'dbName': 'customerDB' });
 
 // Middleware to parse JSON requests
 app.use("*", bodyParser.json());
@@ -38,14 +38,12 @@ app.post('/api/login', async (req, res) => {
     let user_name = data['user_name'];
     let password = data['password'];
 
-    // Querying the MongoDB 'customers' collection for matching user_name and password
-    const documents = await Customers.find({ user_name: user_name, password: password });
-
-    // If a matching user is found, set the session username and serve the home page
-    if (documents.length > 0) {
-        res.send("User Logged In");
+    const user = usersDic[user_name];
+    if (!user || await bcrypt.compare(password, user.hashedpwd)) {
+        res.status(401).send('User information incorrect');
+        return;
     } else {
-        res.send("User Information incorrect");
+        res.status(200).send("Login successfully");
     }
 });
 
@@ -53,29 +51,50 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/add_customer', async (req, res) => {
     const data = req.body;
     console.log(data)
-    const documents = await Customers.find({ user_name: data['user_name']});
+    const documents = await Customers.find({ user_name: data['user_name'] });
     if (documents.length > 0) {
-        res.send("User already exists");
+        res.status(409).send("User already exists");
     }
-    
+
+    const hashedpwd = await bcrypt.hash(data['password'], saltRounds);
+    usersDic[data['user_name']] = { hashedpwd };
     // Creating a new instance of the Customers model with data from the request
     const customer = new Customers({
         "user_name": data['user_name'],
         "age": data['age'],
-        "password": data['password'],
+        "password": hashedpwd,
         "email": data['email']
     });
 
     // Saving the new customer to the MongoDB 'customers' collection
     await customer.save();
 
-    res.send("Customer added successfully")
+    res.status(201).send("Customer added successfully")
 });
 
 // GET endpoint for the root URL, serving the home page
 app.get('/', async (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'home.html'));
 });
+
+function authenticateToken(req, res, next) {
+    const token = req.headers['authorization'];
+
+    if(!token) {
+        res.sendStatus(401);
+        return;
+    } else {
+        jwt.verify(token, secretKey, (err, user) => {
+            if(err) {
+                res.send(403);
+                return;
+            } else {
+                req.user = user;
+                next();
+            }
+        })
+    }
+};
 
 // Starting the server and listening on the specified port
 app.listen(port, () => {
