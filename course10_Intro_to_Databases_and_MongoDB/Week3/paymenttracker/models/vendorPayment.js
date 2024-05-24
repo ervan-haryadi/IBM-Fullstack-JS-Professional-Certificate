@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
+
 const Schema = mongoose.Schema;
+
 const VendorPaymentSchema = new Schema({
     transaction_id: {
         type: String,
@@ -19,6 +21,9 @@ const VendorPaymentSchema = new Schema({
         default:new Date(),
         required:true
     },
+    payment_date: {
+        type: Date,
+    },
     amount: {
         type: Number,
         required:true,
@@ -32,7 +37,8 @@ const VendorPaymentSchema = new Schema({
         enum: ['Unpaid','Partially Paid','Fully Paid'],
         required:true
     },
-}, {timestamps: true,
+}, {
+    timestamps: true,
 });
 
 module.exports = mongoose.model('VendorPayments', VendorPaymentSchema)
