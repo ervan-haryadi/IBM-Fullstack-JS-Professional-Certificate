@@ -11,31 +11,37 @@ app.get('/', async (req, res) => {
 // GET endpoint
 app.get('/squarenumber/:num', async (req, res, next) => {
     let x = req.params.num;
-    if(isNaN(x)) {
+    if (isNaN(x)) {
         next(new Error("Input is not a number"));
         return;
     }
-    res.json({"square":x*x});
+    res.json({ "square": x * x });
 });
 
 app.get('/cubenumber/:num', async (req, res, next) => {
     let x = req.params.num;
-    if(isNaN(x)) {
+    if (isNaN(x)) {
         const err = new Error('Invalid input');
         err.statusCode = 400;
         err.details = "The input must be a number";
         next(err);
     } else {
-        res.json({"cube":x*x*x});
+        res.json({ "cube": x * x * x });
     };
 });
 
 app.get('/getelementatindex/:mystr/:idx', async (req, res, next) => {
     let mystr = req.params.mystr;
     let idx = req.params.idx;
-    if(idx<=mystr.length) {
-        let charAtIdx = mystr.charAt(idx-1);
-        res.json({'Element at index':charAtIdx});
+    if (isNaN(idx)) {
+        next(new Error("Index is not a number"));
+        return;
+    }
+    if (idx < 0) {
+        next(new Error('Invalid index number'));
+    } else if (idx <= mystr.length) {
+        let charAtIdx = mystr.charAt(idx - 1);
+        res.json({ 'Element at index': charAtIdx });
     } else {
         next(new Error("Index greater than string length"));
     };
@@ -52,8 +58,8 @@ app.use((err, req, res, next) => {
 
     // Send a JSON response with formatted error details
     res.status(err.statusCode).json({
-        status:err.status,
-        message:err.message,
+        status: err.status,
+        message: err.message,
     });
 });
 
